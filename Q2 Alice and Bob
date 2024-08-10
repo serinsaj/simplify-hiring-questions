@@ -1,0 +1,38 @@
+from collections import defaultdict
+
+class Graph:
+    def __init__(self):
+        self.graph = defaultdict(list)
+
+    def add_edge(self, u, v):
+        self.graph[u].append(v)
+        self.graph[v].append(u)
+
+    def find_common_friends(self, person1, person2):
+        common_friends = set(self.graph[person1]) & set(self.graph[person2])
+        return list(common_friends)
+
+    def find_connection(self, start, end):
+        visited = set()
+        queue = [(start, 0)]
+
+        while queue:
+            person, distance = queue.pop(0)
+            if person == end:
+                return distance
+            visited.add(person)
+            for neighbor in self.graph[person]:
+                if neighbor not in visited:
+                    queue.append((neighbor, distance + 1))
+        return -1
+
+# Example usage
+g = Graph()
+g.add_edge('Alice', 'Bob')
+g.add_edge('Alice', 'Charlie')
+g.add_edge('Bob', 'Charlie')
+g.add_edge('Bob', 'David')
+g.add_edge('Charlie', 'Eve')
+
+print(g.find_common_friends('Alice', 'Bob'))  # Output: ['Charlie']
+print(g.find_connection('Alice', 'Eve'))  # Output: 2
