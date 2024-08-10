@@ -1,0 +1,78 @@
+from collections import defaultdict
+
+class Task:
+    def __init__(self, id, duration):
+        self.id = id
+        self.duration = duration
+        self.early_start = 0
+        self.early_finish = 0
+        self.late_start = 0
+        self.late_finish = 0
+        self.slack = 0
+
+class Project:
+    def __init__(self):
+        self.tasks = {}
+        self.dependencies = defaultdict(list)
+
+    def add_task(self, task_id, duration):
+        task = Task(task_id, duration)
+        self.tasks[task_id] = task
+        return task
+
+    def add_dependency(self, predecessor, successor):
+        self.dependencies[predecessor].append(successor)
+
+    def topological_sort(self):
+        visited = set()
+        stack = []
+        def dfs(node):
+            visited.add(node)
+            for neighbor in self.dependencies[node]:
+                if neighbor not in visited:
+                    dfs(neighbor)
+            stack.append(node)
+        for node in self.tasks:
+            if node not in visited:
+                dfs(node)
+        return stack[::-1]
+
+    def calculate_early_start_and_finish(self):
+        topological_order = self.topological_sort()
+        for task_id in topological_order:
+            task = self.tasks[task_id]
+            if not self.dependencies[task_id]:
+                task.early_start = 0
+            else:
+                task.early_start = max(self.tasks[pred].early_finish for pred in self.dependencies[task_id])
+            task.early_finish = task.early_start + task.duration
+
+    def calculate_late_start_and_finish(self):
+        topological_order = self.topological_sort()[::-1]
+        project_duration = self.tasks[topological_order[0]].early_finish
+        for task_id in topological_order:
+            task = self.tasks[task_id]
+            if not self.dependencies[task_id]:
+                task.late_finish = project_duration
+            else:
+                task.late_finish = min(self.tasks[succ].late_start for succ in self.dependencies[task_id])
+            task.late_start = task.late_finish - task.duration
+            task.slack = task.late_start - task.early_start
+
+    def find_critical_path(self):
+        critical_path = []
+        for task_id, task in self.tasks.items():
+            if task.slack == 0:
+                critical_path.append(task_id)
+        return critical_path
+
+# Example usage
+project = Project()
+# Add tasks and dependencies
+# ...
+project.calculate_early_start_and_finish()
+project.calculate_late_start_and_finish()
+critical_path = project.find_critical_path()
+
+print("Earliest completion time:", project.tasks[critical_path[-1]].early_finish)
+print("Latest completion time:", project.tasks[critical_path[-1]].late_finish)
